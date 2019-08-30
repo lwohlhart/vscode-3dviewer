@@ -2,6 +2,7 @@
 
 import { Disposable, TextDocumentContentProvider, Uri, EventEmitter, Event, workspace, ExtensionContext, commands, ViewColumn, window } from 'vscode';
 
+import * as vscode from 'vscode' ;
 import * as path from 'path';
 
 export default class MeshPreviewContentProvider implements TextDocumentContentProvider {
@@ -32,8 +33,11 @@ export default class MeshPreviewContentProvider implements TextDocumentContentPr
 
         this._disposables.push( commands.registerCommand("3dviewer.openInViewer", (fileUri: Uri) => {
             if (fileUri) {
-                let previewUri = fileUri.with({scheme: 'preview3dfile'});
-                commands.executeCommand('vscode.previewHtml', previewUri, ViewColumn.Active, "3D Mesh Preview");
+                let previewUri = fileUri.with({ scheme: 'vscode-resource' });
+                const panel = vscode.window.createWebviewPanel('3D_Mesh_Preview','3D Mesh Preview',vscode.ViewColumn.One,{ enableScripts: true });
+                this.provideTextDocumentContent(previewUri).then((previewHTML) => {
+                    panel.webview.html = previewHTML;
+                })
                 console.log(previewUri.toString());
             }
         }));
@@ -43,7 +47,11 @@ export default class MeshPreviewContentProvider implements TextDocumentContentPr
                 if (value) {
                     let fileUri = Uri.parse(value);
                     let previewUri = fileUri.with({scheme: 'preview3d' + fileUri.scheme});
-                    commands.executeCommand('vscode.previewHtml', previewUri, ViewColumn.Active, "3D Mesh Preview");
+                    const panel = vscode.window.createWebviewPanel('3D_Mesh_Preview','3D Mesh Preview',vscode.ViewColumn.One,{ enableScripts: true });
+                    this.provideTextDocumentContent(previewUri).then((previewHTML) => {
+                        panel.webview.html = previewHTML;
+                    })
+                    // commands.executeCommand('vscode.previewHtml', previewUri, ViewColumn.Active, "3D Mesh Preview");
                     console.log(previewUri.toString());
                 }
             })
@@ -64,7 +72,7 @@ export default class MeshPreviewContentProvider implements TextDocumentContentPr
     }
 
     private getMediaPath(mediaFile: string): string {
-		return Uri.file(this.context.asAbsolutePath(path.join('media', mediaFile))).toString();
+		return vscode.Uri.parse(this.context.asAbsolutePath(path.join('media', mediaFile))).with({ scheme: 'vscode-resource' }).toString();
     }
 
     private getSettings(uri: Uri): string {
@@ -111,8 +119,8 @@ export default class MeshPreviewContentProvider implements TextDocumentContentPr
             case 'preview3dhttps':
                 uri = uri.with({scheme: 'https'});
                 break;
-            default:
-                return null;
+            // default:
+            //     return null;
         }
         return new Promise( async (resolve) => {
             resolve(`
