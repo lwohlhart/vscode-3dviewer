@@ -125,6 +125,7 @@ function init() {
         default:
             loader = new THREE.OBJLoader();
             loader.setPath(folder);
+            fileToLoad = fileToLoad.replace(folder, '');
             break;
     }
 
